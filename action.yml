@@ -1,0 +1,48 @@
+name: "SonarQube Comment Status"
+description: >
+  Detailed analysis of your pull request after verification by sonarqube.
+branding:
+  icon: 'git-pull-request'
+  color: 'green'
+inputs:
+  sonar_host_url:
+    description: "SonarQube Url"
+    required: true
+  sonar_token:
+    description: "Token Project Sonar"
+    required: true
+  sonar_projectkey:
+    description: "Name Project"
+    required: true
+  github-token:
+    description: "GitHub Token"
+    required: true
+outputs:
+  quality_check:
+    description: >
+      The resulting Status SonarQube 
+      
+runs:
+  using: "composite"
+  steps:
+    - name: Checking Sonar
+      id: check
+      shell: bash
+      run: $GITHUB_ACTION_PATH/script/sonar.sh
+      env: 
+       SONAR_HOST_URL: ${{ inputs.sonar_host_url}}
+       SONAR_TOKEN: ${{ inputs.sonar_token }}
+       SONAR_PROJECTKEY: ${{ inputs.sonar_projectkey }}
+     
+    - name: CommentPR
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{inputs.github-token}}
+        script: |
+          github.rest.issues.createComment({
+            issue_number: ${{ github.event.number }},
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `${{ steps.check.outputs.quality_check }}`
+          })
+
